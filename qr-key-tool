@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+set -euo pipefail
+IFS=$'\n\t'
+
+# OUTPUT=output.txt
+
+PART1=splits-aa
+PART2=splits-ab
+OUTPUT=output.txt
+
+function encode() {
+  FILE=$1
+
+  split -n 2 $FILE splits-
+
+  cat $PART1 | qrencode -o $PART1.png
+  cat $PART2 | qrencode -o $PART2.png
+
+  rm $PART1
+  rm $PART2
+}
+
+function decode() {
+  PART1=$1
+  PART2=$2
+  zbarimg --quiet --raw $PART1 | head -c -1 > $OUTPUT
+  zbarimg --quiet --raw $PART2 | head -c -1 >> $OUTPUT
+}
+
+function test_output() {
+  FILE=$1
+  decode $PART1.png $PART2.png
+
+  diff $FILE $OUTPUT
+  echo 'Decoding test succeeded'
+}
+
+function display_usage() {
+  echo Usage:
+  echo `basename $0` --encode \<file\>
+  echo `basename $0` --decode \<image\> \<image\>
+  exit 1
+}
+
+if [ $# -eq 0 ]; then
+  display_usage
+elif [ $1 = "--encode" ]; then
+  if [ $# -ne 2 ]; then
+    display_usage
+  fi
+  encode $2
+  test_output $2
+elif [ $1 = "--decode" ]; then
+  if [ $# -ne 3 ]; then
+    display_usage
+  fi
+  decode $2 $3
+else
+  display_usage
+fi
+
+# if [[ ( $# == "--help") ||  $# == "-h" ]]
+# then
+#   display_usage
+#   exit 0
+# fi
+
+
+# ./decode $PART1.png $FILE2.png
